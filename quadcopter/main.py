@@ -1,12 +1,11 @@
-# [v0.1.6]
+# [v0.1.7]
 
 # -------------------- [Import from Library] --------------------
 #import utime
-import _thread
+import machine
 
 from utime import sleep_ms
 from machine import Pin,I2C
-
 # -------------------- [~Import from Library] --------------------
 
 # -------------------- [Import from Modules] --------------------
@@ -18,7 +17,7 @@ from machine import Pin,I2C
 # -------------------- [Variables] --------------------
 # ---------- [Basic Variables] ----------
 # [Loop Tick]
-count=0
+tick_value=0
 
 # [SDA, and SCL for I2C]
 i2c_sda=0
@@ -139,13 +138,15 @@ def shell_print():
     print(f"Gyro:\tXaxis= {gyro_xaxis:.2f},\tYaxis= {gyro_yaxis:.2f},\tZaxis= {gyro_zaxis:.2f}")
     print(f"Temp:\t{temp_value:.2f}°C")
     print("")
-    print(f"Tick: {count}")
+    print(f"Tick: {tick_value}")
     print("---------------------------------------------------------------------------")
-
 # --------------- [~Shell Print] ---------------
 # -------------------- [~Functions] --------------------
 
 # -------------------- [Setup] --------------------
+# [CPU Frequency]
+machine.freq(freq)
+
 # [Define I2C Bus]
 i2c=I2C(0,sda=Pin(i2c_sda),scl=Pin(i2c_scl))
 
@@ -156,8 +157,8 @@ mpu6050_init(i2c)
 # -------------------- [Loop] --------------------
 while True:
     # [Loop Tick]
-    if count==100:count=0
-    count+=1
+    if tick_value==128:tick_value=0
+    tick_value+=1
 
     # [MPU6050 Sensor Update]
     mpu6050_get_accel() # Accelerometer
@@ -170,5 +171,4 @@ while True:
 
     # [10 ms Delay]
     sleep_ms(10)
-    pass
 # -------------------- [~Loop] --------------------
