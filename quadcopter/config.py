@@ -1,3 +1,8 @@
+# ---------- [System] ----------
+# Boot and Reboot
+boot_state=1          # if set to zero need to manually boot on gpio14 (Pin14) to ground (GND)
+reboot_state=0        # if set to one the flight controller will not going to bootup
+
 # ---------- [CPU Frequency] ----------
 # CPU Clock
 freq=256000000 # Hz == 256 MHz

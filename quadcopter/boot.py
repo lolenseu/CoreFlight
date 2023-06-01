@@ -4,7 +4,7 @@
 #import webrepl
 #webrepl.start()
 
-# v0.1.8
+# v0.1.9
 # ampy --h # Flash Tool
 
 # ---------- [Library] ----------
@@ -15,15 +15,14 @@ import utime
 from config import*
 
 # ---------- [Define Variables] ----------
-# CPU Temp
-adc_temp=machine.ADC(4)
+# [System] --------------------
+#Boot and Reboot Pin
+boot_gpio=14
+reboot_gpio=15
 
 # SDA, and SCL for I2C
 i2c_sda=0
 i2c_scl=1
-
-# Define I2C Bus
-i2c=machine.I2C(0,sda=machine.Pin(i2c_sda),scl=machine.Pin(i2c_scl))
 
 # [MPU6050] --------------------
 # MPU6050 address on I2C Bus
@@ -49,8 +48,8 @@ gyro_zout_high=0x47
 gyro_zout_low=0x48
 
 # Temperature high and low register
-temp_out_high = 0x41
-temp_out_low = 0x42
+temp_out_high=0x41
+temp_out_low=0x42
 
 # ---------- [Basic Variables] ----------
 # Loop Tick
@@ -139,19 +138,22 @@ class _shell:
         print(f"Tick: {tick_value}")
         print("---------------------------------------------------------------------------")
 
-# main
+# main (Run Loop)
 class _main:
     def __init__(self):
         pass
 
     def loop():
-        # Loop
         while True:
-            # [Loop Tick]
+            # Loop break for reboot
+            if reboot_state==1:
+                break
+
+            # Loop Tick
             if tick_value==128:tick_value=0
             tick_value+=1
 
-            # [RP2040 Serson Update]
+            # RP2040 Serson Update
             _rp2040.get_temp() # Temperature
 
             # [MPU6050 Sensor Update]
@@ -160,20 +162,39 @@ class _main:
             _mpu6050.get_temp() # Temperature
 
 
-            # [Shell Print Update]
+            # Shell Print Update
             _shell.shell_print()
 
             # 10 ms Delay
             utime.sleep_ms(10)
 
-
 # ---------- [Setup] ----------
+# Boot and Reboot State
+boot_state=machine.Pin(boot_gpio,machine.Pin.PULL_DOWN)
+reboot_state=machine.Pin(reboot_gpio,machine.Pin.PULL_DOWN)
+
+# CPU Temp
+adc_temp=machine.ADC(4)
+
+# I2C Bus
+i2c=machine.I2C(0,sda=machine.Pin(i2c_sda),scl=machine.Pin(i2c_scl))
+
+# [Initiate] --------------------
 # CPU Frequency
 machine.freq(freq)
 
 # Initiate MPU6050 on I2C
 _mpu6050.init(i2c)
-
+          
 # ---------- [Loop] ----------
-_main.loop()
+while True:
+    while boot_state: # Startup Loop
+        # import config
+        from config import* # reimport config if reboot
+
+        # [Bootup] --------------------
+
+        # [Self Check] --------------------
+
+        _main.loop() # Main Loop
 
