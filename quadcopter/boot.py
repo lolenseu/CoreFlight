@@ -4,15 +4,18 @@
 #import webrepl
 #webrepl.start()
 
-# v0.1.9
+# v0.1.10
 # ampy --h # Flash Tool
+
 
 # ---------- [Library] ----------
 import machine
 import utime
 
+
 # ---------- [Modules] ----------
 from config import*
+
 
 # ---------- [Define Variables] ----------
 # [System] --------------------
@@ -51,9 +54,17 @@ gyro_zout_low=0x48
 temp_out_high=0x41
 temp_out_low=0x42
 
+
 # ---------- [Basic Variables] ----------
+# Delay
+expected_delay=24 # ms
+
+# First Process Time
+process_time=0
+
 # Loop Tick
 tick_value=0
+
 
 # ---------- [Functions] ----------
 # rp2040
@@ -135,38 +146,11 @@ class _shell:
         print(f"Gyro:\tXaxis= {gyro_xaxis:.2f},\tYaxis= {gyro_yaxis:.2f},\tZaxis= {gyro_zaxis:.2f}")
         print(f"Temp:\t{mpu6050_temp:.2f}°C")
         print("")
+        print(f"Process: {process_time}ms")
+        print("")
         print(f"Tick: {tick_value}")
         print("---------------------------------------------------------------------------")
 
-# main (Run Loop)
-class _main:
-    def __init__(self):
-        pass
-
-    def loop():
-        while True:
-            # Loop break for reboot
-            if reboot_state==1:
-                break
-
-            # Loop Tick
-            if tick_value==128:tick_value=0
-            tick_value+=1
-
-            # RP2040 Serson Update
-            _rp2040.get_temp() # Temperature
-
-            # [MPU6050 Sensor Update]
-            _mpu6050.get_accel() # Accelerometer
-            _mpu6050.get_gyro() # Gyroscope
-            _mpu6050.get_temp() # Temperature
-
-
-            # Shell Print Update
-            _shell.shell_print()
-
-            # 10 ms Delay
-            utime.sleep_ms(10)
 
 # ---------- [Setup] ----------
 # Boot and Reboot State
@@ -185,7 +169,8 @@ machine.freq(freq)
 
 # Initiate MPU6050 on I2C
 _mpu6050.init(i2c)
-          
+
+     
 # ---------- [Loop] ----------
 while True:
     while boot_state: # Startup Loop
@@ -196,5 +181,39 @@ while True:
 
         # [Self Check] --------------------
 
-        _main.loop() # Main Loop
+        # [Main Loop] --------------------
+        while True:
+            # Loop break for reboot
+            if reboot_state==1:
+                break
+
+            start_time=utime.ticks_ms() # Start Process   
+
+            # Loop Tick Reset
+            if tick_value==128:tick_value=0
+
+            # RP2040 Serson Update
+            _rp2040.get_temp() # Temperature
+
+            # [MPU6050 Sensor Update]
+            _mpu6050.get_accel() # Accelerometer
+            _mpu6050.get_gyro() # Gyroscope
+            _mpu6050.get_temp() # Temperature
+
+            # Shell Print Update
+            _shell.shell_print()
+
+            # Ticks
+            tick_value+=1 # 1 Tick == expected delay
+
+            end_time=utime.ticks_ms() # End Process
+
+            # Compute for smoth delay
+            process_time=end_time-start_time # Process time
+            remaining_time=expected_delay-process_time # To get the value before delay
+            process_time_value=process_time # To make readable for  Shell Print
+
+            # Delay
+            utime.sleep_ms(remaining_time)
+            
 
